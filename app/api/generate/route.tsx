@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const runtime = 'edge';  // Use Edge runtime for minimal cold starts 
+export const runtime = 'edge'; // Use Edge runtime – no Node.js binaries needed
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
           justifyContent: 'center',
           width: '100%',
           height: '100%',
-          backgroundColor: '#fff',
+          backgroundColor: '#ffffff',
           padding: '40px',
           fontFamily: 'Arial, sans-serif',
         }}
