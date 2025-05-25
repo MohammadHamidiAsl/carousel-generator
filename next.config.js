@@ -1,22 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // —— Next 14 settings ————————————————————————————————
+  /* — Next 14 — */
   experimental: {
-    // keep these packages external so Next doesn’t bundle them
     serverComponentsExternalPackages: [
       'puppeteer-core',
       '@sparticuz/chromium-min'
     ]
   },
 
-  // —— Next 15+ forward-compat (ignored by 14) ———————————
+  /* — Next 15+ forward-compat — */
   serverExternalPackages: [
     'puppeteer-core',
     '@sparticuz/chromium-min'
   ],
 
   webpack: (config) => {
-    config.resolve.alias.canvas = false;   // your existing tweak
+    config.resolve.alias.canvas = false;
     return config;
   }
 };
