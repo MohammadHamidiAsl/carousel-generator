@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer, { Browser } from 'puppeteer';
+
+/**  Run this API route in the full Node.js runtime on Vercel */
+export const runtime = 'nodejs';
+
+import puppeteer from 'puppeteer';
+import type { Browser, LaunchOptions } from 'puppeteer';
 
 //
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -30,13 +35,10 @@ const guessChromePath = (): string | undefined => {
     case 'win32':
       return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
     default:
-      // most Linux distros have one of these in $PATH
       return '/usr/bin/google-chrome';
   }
 };
 
-//
-// ─── Helper: render ONE page to PNG ────────────────────────────────────────
 //
 // ─── Helper: render ONE page to PNG ────────────────────────────────────────
 async function renderPageToPng(
@@ -54,11 +56,9 @@ async function renderPageToPng(
 
   await page.goto(pageUrl, { waitUntil: 'networkidle0' });
 
-  /* ---------- wait for fonts (Puppeteer v22+) -------------------------- */
   try {
     await page.evaluate(() => (document as any).fonts.ready);
   } catch {
-    // fallback to a small delay if Font Loading API isn't available
     await new Promise((r) => setTimeout(r, 2000));
   }
 
@@ -82,18 +82,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // -------- Build a baseUrl that matches *this* request ------------------
     const hostHeader = request.headers.get('host') ?? 'localhost:3000';
     const isLocalhost =
       hostHeader.startsWith('localhost') || hostHeader.startsWith('127.');
     const protocol = isLocalhost ? 'http' : 'https';
-
     const baseUrl =
       process.env.NEXT_PUBLIC_BASE_URL ?? `${protocol}://${hostHeader}`;
 
     // -------- Launch Puppeteer --------------------------------------------
-    const chromePath = guessChromePath(); // may be undefined
-    const launchOpts: puppeteer.PuppeteerLaunchOptions = {
+    const chromePath = guessChromePath();
+    const launchOpts: LaunchOptions = {
       headless: 'new',
       args: [
         '--no-sandbox',
@@ -101,9 +99,9 @@ export async function POST(request: NextRequest) {
         '--disable-dev-shm-usage',
         '--disable-web-security',
         '--font-render-hinting=none'
-      ]
+      ],
+      executablePath: chromePath
     };
-    if (chromePath) launchOpts.executablePath = chromePath;
 
     let browser: Browser;
     try {
