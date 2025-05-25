@@ -1,16 +1,22 @@
 // next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // produce a standalone build to avoid bundling dev-deps
+  // standalone build keeps your lambdas lean
   output: 'standalone',
 
-  // make sure your lambda can read this at runtime:
+  // expose your BASE URL at runtime
   env: {
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
   },
 
-  // (optional) if you ever migrate to Edge OG:
-  // experimental: { runtime: 'experimental-edge' },
+  // drop any .map files so Webpack won’t try to parse them
+  webpack(config) {
+    config.module.rules.push({
+      test: /\.js\.map$/i,
+      use: 'ignore-loader',
+    });
+    return config;
+  },
 };
 
 module.exports = nextConfig;
