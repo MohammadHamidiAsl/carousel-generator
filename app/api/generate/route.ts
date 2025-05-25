@@ -1,3 +1,5 @@
+// Move this to `app/api/generate/route.ts` (or `pages/api/generate.ts` if using Pages Router)
+// app/api/generate/route.ts
 import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 
@@ -9,18 +11,18 @@ interface PageData {
   title?: string;
   subtitle?: string;
   paragraphs?: string[];
-  // …other fields…
+  // …other fields as before
 }
 
 export async function POST(request: Request) {
   let browser = null;
   try {
-    const { pages } = await request.json() as { pages: PageData[] };
+    const { pages } = (await request.json()) as { pages: PageData[] };
     if (!Array.isArray(pages) || pages.length === 0) {
       return NextResponse.json({ error: 'Invalid pages payload' }, { status: 400 });
     }
 
-    // Launch Chrome in Lambda-compatible mode
+    // launch Lambda-compatible Chrome
     browser = await puppeteer.launch({
       args: chromium.args,
       executablePath: await chromium.executablePath,
@@ -28,26 +30,25 @@ export async function POST(request: Request) {
       defaultViewport: { width: 1080, height: 1080 },
     });
 
-    const results: string[] = [];
     const base = process.env.NEXT_PUBLIC_BASE_URL;
     if (!base) throw new Error('NEXT_PUBLIC_BASE_URL not set');
 
+    const results: string[] = [];
+    const dataParam = encodeURIComponent(JSON.stringify(pages));
     for (let i = 0; i < pages.length; i++) {
       const page = await browser.newPage();
-      const dataParam = encodeURIComponent(JSON.stringify(pages));
       const url = `${base}/render?page=${i}&data=${dataParam}`;
 
-      // Navigate with timeout guard
+      // navigation with timeout guard
       await Promise.race([
         page.goto(url, { waitUntil: 'networkidle' }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('Navigation timeout')), 8000))
       ]);
 
-      // Wait for fonts to load, if you rely on them
+      // ensure custom fonts have loaded
       await page.evaluate(() => (document as any).fonts?.ready);
 
-      const screenshot = await page.screenshot({ encoding: 'base64' });
-      results.push(screenshot);
+      results.push(await page.screenshot({ encoding: 'base64' }) as string);
       await page.close();
     }
 

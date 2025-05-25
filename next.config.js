@@ -1,14 +1,15 @@
+// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Emit a standalone build so only production dependencies are bundled
+  // produce a standalone build to avoid bundling dev-deps
   output: 'standalone',
 
-  // Expose your BASE URL so your lambda can hit it correctly in prod
+  // make sure your lambda can read this at runtime:
   env: {
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
   },
 
-  // (Optional) If you ever migrate rendering to the Edge OG API:
+  // (optional) if you ever migrate to Edge OG:
   // experimental: { runtime: 'experimental-edge' },
 };
 
