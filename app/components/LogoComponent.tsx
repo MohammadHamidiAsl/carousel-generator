@@ -1,26 +1,25 @@
-interface LogoProps {
-  className?: string;
-  size?: 'small' | 'large';
-  alt?: string;
-}
+// app/components/LogoComponent.tsx
+import React from 'react';
 
 export default function LogoComponent({
   className = '',
   size = 'large',
-  alt = 'n98n logo'
-}: LogoProps) {
-  // Tailwind sizes: small ≈ 72 px, large ≈ 144 px
-  const sizeClasses = size === 'large' ? 'w-36 h-36' : 'w-18 h-18';
-
+  alt = 'n98n logo',
+  style = {},
+}: {
+  className?: string;
+  size?: 'small' | 'large';
+  alt?: string;
+  style?: React.CSSProperties;
+}) {
+  const px = size === 'large' ? 144 : 72;
   return (
-    <div className={`${sizeClasses} ${className}`}>
-      {/* static file from /public */}
-      <img
-        src="/logo.svg"
-        alt={alt}
-        className="w-full h-full object-contain"
-        draggable={false}
-      />
-    </div>
+    <img
+      src="/logo.svg"
+      alt={alt}
+      draggable={false}
+      className={className}
+      style={{ width: px, height: px, objectFit: 'contain', ...style }}
+    />
   );
 }

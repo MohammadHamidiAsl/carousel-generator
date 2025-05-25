@@ -1,54 +1,40 @@
+// app/components/CarouselPages.tsx
+import React from 'react';
 import CoverPage from './CoverPage';
 import ContentPage from './ContentPage';
 import EndPage from './EndPage';
 
-interface PageData {
+export interface PageData {
   type: 'cover' | 'content' | 'end';
   title?: string;
   subtitle?: string;
   paragraphs?: string[];
-  headline?: string;
   highlight?: string;
   buttonText?: string;
   buttonUrl?: string;
 }
 
-interface CarouselPagesProps {
-  pages: PageData[];
-}
-
-export default function CarouselPages({ pages }: CarouselPagesProps) {
+export default function CarouselPages({ pages }: { pages: PageData[] }) {
   return (
-    <div>
-      {pages.map((page, index) => {
-        switch (page.type) {
+    <>
+      {pages.map((p, i) => {
+        switch (p.type) {
           case 'cover':
-            return (
-              <div key={index} id={`page-${index}`}>
-                <CoverPage title={page.title || ''} subtitle={page.subtitle} />
-              </div>
-            );
+            return <CoverPage key={i} title={p.title!} subtitle={p.subtitle} />;
           case 'content':
-            return (
-              <div key={index} id={`page-${index}`}>
-                <ContentPage paragraphs={page.paragraphs || []} />
-              </div>
-            );
+            return <ContentPage key={i} paragraphs={p.paragraphs!} />;
           case 'end':
             return (
-              <div key={index} id={`page-${index}`}>
-                <EndPage
-                  headline={page.headline || ''}
-                  highlight={page.highlight}
-                  buttonText={page.buttonText}
-                  buttonUrl={page.buttonUrl}
-                />
-              </div>
+              <EndPage
+                key={i}
+                headline={p.title!}
+                highlight={p.highlight}
+                buttonText={p.buttonText}
+                buttonUrl={p.buttonUrl}
+              />
             );
-          default:
-            return null;
         }
       })}
-    </div>
+    </>
   );
 }

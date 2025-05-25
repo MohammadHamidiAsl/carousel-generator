@@ -1,42 +1,46 @@
+// app/components/ContentPage.tsx
+import React from 'react';
+import SlideWrapper, { SLIDE_SIZE } from './SlideWrapper';
 import LogoComponent from './LogoComponent';
 
-interface ContentPageProps {
-  paragraphs: string[];
-}
-
-export default function ContentPage({ paragraphs }: ContentPageProps) {
+export default function ContentPage({ paragraphs }: { paragraphs: string[] }) {
   return (
-    <div className="carousel-page relative min-h-screen overflow-hidden" style={{ backgroundColor: '#1a1b2e' }}>
-      {/* Deep radial glow background - same as cover page */}
-      <div className="absolute inset-0" style={{
-        background: 'radial-gradient(ellipse at center, rgba(79, 70, 229, 0.08) 0%, rgba(26, 27, 46, 0.98) 60%, rgba(26, 27, 46, 1) 100%)'
-      }} />
-
-      {/* Logo positioned in bottom-left */}
-      <LogoComponent className="absolute bottom-6 left-6 z-10" size="small" />
-
-      {/* Content container - centered vertically and horizontally */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="max-w-4xl px-8" dir="rtl">
-          {/* Paragraphs */}
-          {paragraphs.length > 0 && (
-            <div className="space-y-12 text-center">
-              {paragraphs.map((paragraph, index) => (
-                <p
-                  key={index}
-                  className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-400 leading-relaxed"
-                  style={{ 
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
-                    lineHeight: '1.8'
-                  }}
-                >
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          )}
+    <SlideWrapper>
+      <LogoComponent
+        size="small"
+        style={{ position: 'absolute', bottom: 24, left: 24 }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: SLIDE_SIZE.width,
+          height: SLIDE_SIZE.height,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          direction: 'rtl',
+          padding: '0 64px',
+          boxSizing: 'border-box',
+        }}
+      >
+        <div className="space-y-12 text-center">
+          {paragraphs.map((p, i) => (
+            <p
+              key={i}
+              className="text-gray-400 font-light"
+              style={{
+                fontSize: 28,
+                lineHeight: 1.8,
+                fontFamily: 'system-ui, sans-serif',
+              }}
+            >
+              {p}
+            </p>
+          ))}
         </div>
       </div>
-    </div>
+    </SlideWrapper>
   );
 }

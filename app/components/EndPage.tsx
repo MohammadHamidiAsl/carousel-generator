@@ -1,72 +1,92 @@
+// app/components/EndPage.tsx
+import React from 'react';
+import SlideWrapper, { SLIDE_SIZE } from './SlideWrapper';
 import LogoComponent from './LogoComponent';
-
-interface EndPageProps {
-  headline: string;
-  highlight?: string;
-  buttonText?: string;
-  buttonUrl?: string;
-}
 
 export default function EndPage({
   headline,
   highlight = '',
   buttonText = 'دموی رایگان',
-  buttonUrl = '#'
-}: EndPageProps) {
-  const parts = highlight ? headline.split(highlight) : [headline];
+  buttonUrl = '#',
+}: {
+  headline: string;
+  highlight?: string;
+  buttonText?: string;
+  buttonUrl?: string;
+}) {
+  const [before, after] = headline.split(highlight);
 
   return (
-    <div className="carousel-page relative min-h-screen overflow-hidden" style={{ backgroundColor: '#1a1b2e' }}>
-      {/* Deep radial glow background - same as other pages */}
-      <div className="absolute inset-0" style={{
-        background: 'radial-gradient(ellipse at center, rgba(79, 70, 229, 0.08) 0%, rgba(26, 27, 46, 0.98) 60%, rgba(26, 27, 46, 1) 100%)'
-      }} />
+    <SlideWrapper>
+      <LogoComponent
+        size="small"
+        style={{ position: 'absolute', bottom: 24, left: 24 }}
+      />
 
-      {/* Logo positioned in bottom-left */}
-      <LogoComponent className="absolute bottom-6 left-6 z-10" size="small" />
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: SLIDE_SIZE.width,
+          height: SLIDE_SIZE.height,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          padding: '0 64px',
+          boxSizing: 'border-box',
+          direction: 'rtl',
+        }}
+      >
+        <h2
+          className="font-bold text-white mb-12"
+          style={{ fontSize: 64, lineHeight: 1.2, fontFamily: 'system-ui, sans-serif' }}
+        >
+          {before}
+          {highlight && <span style={{ color: '#FF944D' }}>{highlight}</span>}
+          {after}
+        </h2>
 
-      {/* Main content - centered */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="max-w-5xl px-8 text-center" dir="rtl">
-          {/* Headline - centered with highlight */}
-          <h2 
-            className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-white mb-20"
-            style={{ 
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              lineHeight: '1.2'
-            }}
-          >
-            {parts[0]}
-            {highlight && (
-              <span className="text-orange-500">{highlight}</span>
-            )}
-            {parts[1]}
-          </h2>
-        </div>
-
-        {/* CTA Button - centered below text - made even bigger */}
         <a
           href={buttonUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex overflow-hidden rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300"
-          style={{ direction: 'rtl' }}
+          style={{
+            display: 'flex',
+            borderRadius: 48,
+            overflow: 'hidden',
+            boxShadow: '0 10px 20px rgba(0,0,0,0.2)',
+          }}
         >
-          <span 
-            className="px-24 py-12 text-4xl font-bold text-white transition-all duration-300 hover:bg-purple-600"
-            style={{ backgroundColor: 'rgba(139, 92, 246, 1)' }}
+          <span
+            className="font-bold text-white"
+            style={{
+              backgroundColor: 'rgba(139,92,246,1)',
+              padding: '24px 48px',
+              fontSize: 32,
+              fontFamily: 'system-ui, sans-serif',
+            }}
           >
-            دموی رایگان
+            {buttonText}
           </span>
-          <span className="w-px bg-white/26" />
-          <span 
-            className="px-24 py-12 text-4xl font-bold text-white transition-all duration-300 hover:bg-purple-700"
-            style={{ backgroundColor: 'rgba(139, 92, 246, 1)' }}
+          <span
+            style={{ width: 2, backgroundColor: 'rgba(255,255,255,0.26)' }}
+          />
+          <span
+            className="font-bold text-white"
+            style={{
+              backgroundColor: 'rgba(139,92,246,1)',
+              padding: '24px 48px',
+              fontSize: 32,
+              fontFamily: 'system-ui, sans-serif',
+            }}
           >
             n98n.ir
           </span>
         </a>
       </div>
-    </div>
+    </SlideWrapper>
   );
 }
