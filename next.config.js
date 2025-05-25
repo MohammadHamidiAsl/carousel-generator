@@ -1,8 +1,23 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* No special external flags needed for Playwright’s static build */
+  experimental: {
+    // Opt out Playwright from Server Component bundling:
+    serverComponentsExternalPackages: [
+      'playwright-core',
+      'playwright-chromium'
+    ]
+  },
+
+  // Forward-compat for Next 15+:
+  serverExternalPackages: [
+    'playwright-core',
+    'playwright-chromium'
+  ],
+
   webpack: (config) => {
-    config.resolve.alias.canvas = false;   // unchanged
+    // Prevent bundling optional native modules:
+    config.resolve.alias.canvas   = false;
+    config.resolve.alias.electron = false;
     return config;
   }
 };

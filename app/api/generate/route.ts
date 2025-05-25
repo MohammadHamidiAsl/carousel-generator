@@ -1,14 +1,11 @@
 /* app/api/generate/route.ts
- * Generates 1080×1080 PNG slides using Playwright’s static Chromium.
+ * Uses Playwright’s statically linked Chromium for server-side screenshots.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-export const runtime = 'nodejs';  // must run in Node, not Edge
+export const runtime = 'nodejs';  // ensure full Node.js env
 
-import { chromium, Browser, BrowserTypeLaunchOptions } from 'playwright-chromium';
-
-//
-// ─── Types (unchanged) ──────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────
 interface PageData {
   type: 'cover' | 'content' | 'end';
   title?: string;
@@ -19,65 +16,81 @@ interface PageData {
   buttonText?: string;
   buttonUrl?: string;
 }
-interface RequestBody {
-  pages: PageData[];
-}
+interface RequestBody { pages: PageData[]; }
 
-//
-// ─── Helper: render ONE page to PNG (viewport code unchanged) ──────────
+// ─── Dev Chrome path fallback ─────────────────────────────────────────────
+const guessChromePath = (): string | undefined => {
+  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
+  switch (process.platform) {
+    case 'darwin':
+      return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+    case 'win32':
+      return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+    default:
+      return '/usr/bin/google-chrome';
+  }
+};
+
+// ─── Render one slide to base64 PNG ──────────────────────────────────────
 async function renderPageToPng(
-  browser: Browser,
-  pageIndex: number,
+  browser: any,
+  idx: number,
   pages: PageData[],
   baseUrl: string
 ): Promise<string> {
   const page = await browser.newPage();
   await page.setViewportSize({ width: 1080, height: 1080 });
-  const url = `${baseUrl}/render?page=${pageIndex}&data=${encodeURIComponent(
+
+  const url = `${baseUrl}/render?page=${idx}&data=${encodeURIComponent(
     JSON.stringify(pages)
   )}`;
   await page.goto(url, { waitUntil: 'networkidle' });
+
   try {
-    await page.waitForFunction(() => (document as any).fonts.ready);
+    // wait for fonts
+    await page.evaluate(() => (document as any).fonts.ready);
   } catch {
     await new Promise((r) => setTimeout(r, 2000));
   }
+
   const buffer = await page.screenshot({ type: 'png' });
   await page.close();
   return buffer.toString('base64');
 }
 
-//
-// ─── POST handler (launch logic updated) ────────────────────────────────
+// ─── POST handler ─────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
     const body: RequestBody = await request.json();
-    if (!Array.isArray(body.pages) || body.pages.length === 0) {
+    if (!Array.isArray(body.pages) || !body.pages.length) {
       return NextResponse.json(
         { success: false, message: 'Pages array is required' },
         { status: 400 }
       );
     }
 
-    const host = request.headers.get('host') ?? 'localhost:3000';
-    const protocol = host.startsWith('localhost') || host.startsWith('127.')
-      ? 'http'
-      : 'https';
-    const baseUrl =
+    // build baseUrl
+    const host     = request.headers.get('host') ?? 'localhost:3000';
+    const protocol = host.startsWith('localhost') ? 'http' : 'https';
+    const baseUrl  =
       process.env.NEXT_PUBLIC_BASE_URL ?? `${protocol}://${host}`;
 
-    // ─── Launch Playwright Chromium ─────────────────────────────────────
-    const launchOpts: BrowserTypeLaunchOptions = {
+    // ─── dynamically import Playwright ───────────────────────────────────
+    const { chromium } = await import('playwright-chromium');
+
+    // launch options
+    const executablePath = process.env.CHROME_PATH || guessChromePath();
+    const browser = await chromium.launch({
+      executablePath,
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
-    };
-    const browser: Browser = await chromium.launch(launchOpts);
+    });
 
-    // ─── Render all pages ────────────────────────────────────────────────
+    // render all pages
     try {
       const images = await Promise.all(
-        body.pages.map((_, idx) =>
-          renderPageToPng(browser, idx, body.pages, baseUrl)
+        body.pages.map((_, i) =>
+          renderPageToPng(browser, i, body.pages, baseUrl)
         )
       );
       return NextResponse.json({
@@ -88,13 +101,13 @@ export async function POST(request: NextRequest) {
     } finally {
       await browser.close();
     }
-  } catch (error) {
-    console.error('Generation error:', error);
+  } catch (err) {
+    console.error('Generation error:', err);
     return NextResponse.json(
       {
         success: false,
         message: 'Failed to generate images',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: err instanceof Error ? err.message : String(err)
       },
       { status: 500 }
     );
