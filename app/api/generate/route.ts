@@ -1,11 +1,11 @@
 /* app/api/generate/route.ts
- * Uses Playwright’s statically linked Chromium for server-side screenshots.
+ * Uses Playwright’s statically linked Chromium for screenshots.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-export const runtime = 'nodejs';  // ensure full Node.js env
+export const runtime = 'nodejs';  // full Node.js env for Playwright 
 
-// ─── Types ───────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────
 interface PageData {
   type: 'cover' | 'content' | 'end';
   title?: string;
@@ -18,27 +18,13 @@ interface PageData {
 }
 interface RequestBody { pages: PageData[]; }
 
-// ─── Dev Chrome path fallback ─────────────────────────────────────────────
-const guessChromePath = (): string | undefined => {
-  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
-  switch (process.platform) {
-    case 'darwin':
-      return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-    case 'win32':
-      return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-    default:
-      return '/usr/bin/google-chrome';
-  }
-};
-
-// ─── Render one slide to base64 PNG ──────────────────────────────────────
+// ─── Helper: render one slide to PNG ─────────────────────────────────
 async function renderPageToPng(
-  browser: any,
+  page: any,
   idx: number,
   pages: PageData[],
   baseUrl: string
 ): Promise<string> {
-  const page = await browser.newPage();
   await page.setViewportSize({ width: 1080, height: 1080 });
 
   const url = `${baseUrl}/render?page=${idx}&data=${encodeURIComponent(
@@ -47,60 +33,52 @@ async function renderPageToPng(
   await page.goto(url, { waitUntil: 'networkidle' });
 
   try {
-    // wait for fonts
     await page.evaluate(() => (document as any).fonts.ready);
   } catch {
     await new Promise((r) => setTimeout(r, 2000));
   }
 
-  const buffer = await page.screenshot({ type: 'png' });
-  await page.close();
-  return buffer.toString('base64');
+  const buf = await page.screenshot({ type: 'png' });
+  return buf.toString('base64');
 }
 
-// ─── POST handler ─────────────────────────────────────────────────────────
+// ─── POST handler ─────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
-    const body: RequestBody = await request.json();
-    if (!Array.isArray(body.pages) || !body.pages.length) {
+    const { pages }: RequestBody = await request.json();
+    if (!Array.isArray(pages) || pages.length === 0) {
       return NextResponse.json(
         { success: false, message: 'Pages array is required' },
         { status: 400 }
       );
     }
 
-    // build baseUrl
+    // Build the base URL
     const host     = request.headers.get('host') ?? 'localhost:3000';
     const protocol = host.startsWith('localhost') ? 'http' : 'https';
     const baseUrl  =
       process.env.NEXT_PUBLIC_BASE_URL ?? `${protocol}://${host}`;
 
-    // ─── dynamically import Playwright ───────────────────────────────────
+    // Dynamically import Playwright to avoid bundling its entire codebase :contentReference[oaicite:10]{index=10}
     const { chromium } = await import('playwright-chromium');
 
-    // launch options
-    const executablePath = process.env.CHROME_PATH || guessChromePath();
+    // Launch Chromium (no executablePath override) – uses the installed binary :contentReference[oaicite:11]{index=11}
     const browser = await chromium.launch({
-      executablePath,
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
+    const context = await browser.newContext();
+    const images  = await Promise.all(
+      pages.map(async (_page, i) => {
+        const page = await context.newPage();
+        const png  = await renderPageToPng(page, i, pages, baseUrl);
+        await page.close();
+        return png;
+      })
+    );
 
-    // render all pages
-    try {
-      const images = await Promise.all(
-        body.pages.map((_, i) =>
-          renderPageToPng(browser, i, body.pages, baseUrl)
-        )
-      );
-      return NextResponse.json({
-        success: true,
-        images,
-        count: images.length
-      });
-    } finally {
-      await browser.close();
-    }
+    await browser.close();
+    return NextResponse.json({ success: true, images, count: images.length });
   } catch (err) {
     console.error('Generation error:', err);
     return NextResponse.json(
