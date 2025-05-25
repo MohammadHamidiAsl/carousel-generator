@@ -10,7 +10,7 @@ interface PageData {
   title?: string;
   subtitle?: string;
   paragraphs?: string[];
-  // add any other fields your page components require
+  // …any other fields your pages need
 }
 
 interface GenerateRequest {
@@ -26,14 +26,13 @@ export async function POST(request: Request): Promise<NextResponse<GenerateRespo
   let browser = null;
 
   try {
-    // 1. Parse & validate payload
-    const body = (await request.json()) as GenerateRequest;
-    if (!body.pages || !Array.isArray(body.pages) || body.pages.length === 0) {
+    // 1. Parse & validate input
+    const { pages } = (await request.json()) as GenerateRequest;
+    if (!Array.isArray(pages) || pages.length === 0) {
       return NextResponse.json({ error: 'Invalid pages payload' }, { status: 400 });
     }
-    const pages = body.pages;
 
-    // 2. Launch headless Chrome compatible with AWS Lambda / Vercel
+    // 2. Launch headless Chrome (Lambda-compatible)
     browser = await puppeteer.launch({
       args: chromium.args,
       executablePath: await chromium.executablePath,
@@ -41,41 +40,39 @@ export async function POST(request: Request): Promise<NextResponse<GenerateRespo
       defaultViewport: { width: 1080, height: 1080 },
     });
 
-    // 3. Build base URL from env var
+    // 3. Base URL from env var
     const base = process.env.NEXT_PUBLIC_BASE_URL;
     if (!base) {
       throw new Error('Environment variable NEXT_PUBLIC_BASE_URL is not set');
     }
 
-    // 4. Iterate pages → open, render, screenshot
-    const results: string[] = [];
-    // encode entire pages array once
+    // 4. Render each page and collect screenshots
+    const images: string[] = [];
     const dataParam = encodeURIComponent(JSON.stringify(pages));
 
     for (let i = 0; i < pages.length; i++) {
-      const pageInstance = await browser.newPage();
+      const pg = await browser.newPage();
       const url = `${base}/render?page=${i}&data=${dataParam}`;
 
-      // navigate with timeout guard
+      // navigate & wait for network idle
       await Promise.race([
-        pageInstance.goto(url, { waitUntil: 'networkidle' }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Navigation timeout')), 8000)
+        pg.goto(url, { waitUntil: 'networkidle0' }),
+        new Promise<never>((_, rej) =>
+          setTimeout(() => rej(new Error('Navigation timeout')), 8000)
         ),
       ]);
 
-      // wait for any webfonts to be ready
-      await pageInstance.evaluate(() => (document as any).fonts?.ready);
+      // ensure fonts have loaded (if you rely on webfonts)
+      await pg.evaluate(() => (document as any).fonts?.ready);
 
-      // take screenshot as base64
-      const buffer = await pageInstance.screenshot({ encoding: 'base64' }) as string;
-      results.push(buffer);
+      // screenshot to base64
+      const b64 = (await pg.screenshot({ encoding: 'base64' })) as string;
+      images.push(b64);
 
-      await pageInstance.close();
+      await pg.close();
     }
 
-    // 5. Return images array
-    return NextResponse.json({ images: results });
+    return NextResponse.json({ images });
 
   } catch (err: any) {
     console.error('Generation error:', err);
@@ -86,7 +83,7 @@ export async function POST(request: Request): Promise<NextResponse<GenerateRespo
       try {
         await browser.close();
       } catch {
-        // ignore
+        // ignore close errors
       }
     }
   }
