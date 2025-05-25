@@ -1,12 +1,12 @@
 /* app/api/generate/route.ts
- * Screenshot-generator API route – optimised for Vercel
- * Uses puppeteer-core + @sparticuz/chromium-min so no heavy Chromium has to
- * be downloaded at build-time and the bundle stays <10 MB.
+ * Screenshot-generator API route – optimised for Vercel / serverless
+ * Uses puppeteer-core + @sparticuz/chromium-min to avoid downloading a
+ * heavy Chromium binary during build.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
-/** Run this route in a Node.js function (the Edge runtime cannot spawn Chromium) */
+/** Ensure this route runs in the Node.js runtime (Edge cannot spawn Chromium). */
 export const runtime = 'nodejs';
 
 import puppeteer from 'puppeteer-core';
@@ -31,7 +31,7 @@ interface RequestBody {
 }
 
 //
-// ─── Fallback: locate a local Chrome/Chromium binary (for dev) ────────────
+// ─── Fallback Chrome path for local dev ───────────────────────────────────
 //
 const guessChromePath = (): string | undefined => {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
@@ -47,7 +47,7 @@ const guessChromePath = (): string | undefined => {
 };
 
 //
-// ─── Helper: render ONE page to PNG and return it as base64 ───────────────
+// ─── Render ONE page to PNG ───────────────────────────────────────────────
 //
 async function renderPageToPng(
   browser: Browser,
@@ -64,7 +64,7 @@ async function renderPageToPng(
 
   await page.goto(url, { waitUntil: 'networkidle0' });
 
-  /* wait for webfonts if the Font-Loading API is present */
+  // wait for webfonts when available
   try {
     await page.evaluate(() => (document as any).fonts.ready);
   } catch {
@@ -90,54 +90,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    /* Build a base URL that mirrors this request (works in dev & prod) */
+    /* Build a base URL that mirrors the incoming request */
     const host = request.headers.get('host') ?? 'localhost:3000';
-    const isLocal = host.startsWith('localhost') || host.startsWith('127.');
-    const protocol = isLocal ? 'http' : 'https';
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? `${protocol}://${host}`;
+    const protocol =
+      host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https';
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ?? `${protocol}://${host}`;
 
     /* -------- Launch Puppeteer ----------------------------------------- */
     const executablePath =
       process.env.CHROME_PATH ||
-      (await chromium.executablePath()) ||
-      guessChromePath();
+      (await chromium.executablePath()) || // serverless-friendly binary
+      guessChromePath();                   // local dev fallback
 
     const launchOpts: LaunchOptions = {
       executablePath,
-      headless: 'new',
       args: [...chromium.args, '--font-render-hinting=none'],
       defaultViewport: { width: 1080, height: 1080, deviceScaleFactor: 2 }
+      // no 'headless' key needed – chromium.args already sets it
     };
 
-    let browser: Browser;
-    try {
-      browser = await puppeteer.launch(launchOpts);
-    } catch (e) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            'Puppeteer could not start a browser. Ensure a compatible ' +
-            'Chromium is available or CHROME_PATH is correct.',
-          error: (e as Error).message
-        },
-        { status: 500 }
-      );
-    }
+    const browser: Browser = await puppeteer.launch(launchOpts);
 
     /* -------- Render all pages ----------------------------------------- */
     try {
       const images = await Promise.all(
-        body.pages.map((_, idx) =>
-          renderPageToPng(browser, idx, body.pages, baseUrl)
+        body.pages.map((_, i) =>
+          renderPageToPng(browser, i, body.pages, baseUrl)
         )
       );
 
-      return NextResponse.json({
-        success: true,
-        images,
-        count: images.length
-      });
+      return NextResponse.json({ success: true, images, count: images.length });
     } finally {
       await browser.close();
     }
