@@ -1,24 +1,32 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // ── Next 14 (your current version) ────────────────────────────────
+  /* ---- Next 14 ------------------------------------------------------- */
   experimental: {
     serverComponentsExternalPackages: [
-      'puppeteer-core',          // keep the bin/ folder
-      '@sparticuz/chromium-min'  // keep the bin/ folder
-    ]
+      'puppeteer-core',
+      '@sparticuz/chromium-min',
+    ],
+
+    // keep the compressed Chromium stub in the bundle
+    outputFileTracingIncludes: {
+      // key = *route* (no file-extension)
+      './app/api/generate/route': [
+        './node_modules/@sparticuz/chromium-min/bin/**',
+      ],
+    },
   },
 
-  // ── Next 15+ (ignored by 14, useful for the future) ───────────────
+  /* ---- Next 15 + (forward-compat) ----------------------------------- */
   serverExternalPackages: [
     'puppeteer-core',
-    '@sparticuz/chromium-min'
+    '@sparticuz/chromium-min',
   ],
 
-  // your existing Webpack tweak
   webpack: (config) => {
+    // your existing alias
     config.resolve.alias.canvas = false;
     return config;
-  }
+  },
 };
 
 module.exports = nextConfig;
