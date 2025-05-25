@@ -1,4 +1,3 @@
-// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // standalone build keeps your lambdas lean
@@ -9,12 +8,19 @@ const nextConfig = {
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
   },
 
-  // drop any .map files so Webpack won’t try to parse them
   webpack(config) {
+    // 1) drop all of those .map files
     config.module.rules.push({
       test: /\.js\.map$/i,
       use: 'ignore-loader',
     });
+
+    // 2) alias 'puppeteer' to puppeteer-core so chrome-aws-lambda won't crash
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      puppeteer: require.resolve('puppeteer-core'),
+    };
+
     return config;
   },
 };
