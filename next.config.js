@@ -1,22 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* ── Next 14 options ────────────────────────────────────────────── */
+  // —— Next 14 settings ————————————————————————————————
   experimental: {
-    /** keep these packages external so their folders stay in node_modules */
+    // keep these packages external so Next doesn’t bundle them
     serverComponentsExternalPackages: [
       'puppeteer-core',
       '@sparticuz/chromium-min'
-    ],
-
-    /** copy the tiny bin/ placeholder so chromium-min can stage the download */
-    outputFileTracingIncludes: {
-      'app/api/generate/route.ts': [
-        './node_modules/@sparticuz/chromium-min/bin/**'
-      ]
-    }
+    ]
   },
 
-  /* ── Next 15+ forward-compat (ignored by 14) ────────────────────── */
+  // —— Next 15+ forward-compat (ignored by 14) ———————————
   serverExternalPackages: [
     'puppeteer-core',
     '@sparticuz/chromium-min'
