@@ -1,30 +1,35 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* ---- Next 14 ------------------------------------------------------- */
+  /* ---- Next 14 (your current version) ---------------------------- */
   experimental: {
+    /**
+     * Keep the *entire* package in node_modules so its assets survive.
+     */
     serverComponentsExternalPackages: [
       'puppeteer-core',
       '@sparticuz/chromium-min',
     ],
 
-    // keep the compressed Chromium stub in the bundle
+    /**
+     * Tell the output-file-tracer to copy chromium-min/bin/**
+     * into the server bundle for THIS route handler.
+     * 🔑 Key *must* include the file-extension!
+     */
     outputFileTracingIncludes: {
-      // key = *route* (no file-extension)
-      './app/api/generate/route': [
+      'app/api/generate/route.ts': [
         './node_modules/@sparticuz/chromium-min/bin/**',
       ],
     },
   },
 
-  /* ---- Next 15 + (forward-compat) ----------------------------------- */
+  /* ---- Next 15+ (forward-compat, harmless in 14) ----------------- */
   serverExternalPackages: [
     'puppeteer-core',
     '@sparticuz/chromium-min',
   ],
 
   webpack: (config) => {
-    // your existing alias
-    config.resolve.alias.canvas = false;
+    config.resolve.alias.canvas = false;   // whatever tweak you need
     return config;
   },
 };
