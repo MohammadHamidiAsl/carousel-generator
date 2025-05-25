@@ -1,11 +1,9 @@
-/* app/api/generate/route.ts
- * Uses Playwright’s statically linked Chromium for screenshots.
- */
+/* Generates 1080×1080 PNG slides using Playwright’s static Chromium. */
 
 import { NextRequest, NextResponse } from 'next/server';
-export const runtime = 'nodejs';  // full Node.js env for Playwright 
+export const runtime = 'nodejs';  // full Node.js environment for Playwright
 
-// ─── Types ─────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────
 interface PageData {
   type: 'cover' | 'content' | 'end';
   title?: string;
@@ -18,7 +16,7 @@ interface PageData {
 }
 interface RequestBody { pages: PageData[]; }
 
-// ─── Helper: render one slide to PNG ─────────────────────────────────
+// ─── Helper: render one slide to PNG ──────────────────────────────────────
 async function renderPageToPng(
   page: any,
   idx: number,
@@ -42,7 +40,7 @@ async function renderPageToPng(
   return buf.toString('base64');
 }
 
-// ─── POST handler ─────────────────────────────────────────────────────
+// ─── POST handler ─────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
     const { pages }: RequestBody = await request.json();
@@ -53,23 +51,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build the base URL
+    // Build baseUrl from incoming request
     const host     = request.headers.get('host') ?? 'localhost:3000';
     const protocol = host.startsWith('localhost') ? 'http' : 'https';
     const baseUrl  =
       process.env.NEXT_PUBLIC_BASE_URL ?? `${protocol}://${host}`;
 
-    // Dynamically import Playwright to avoid bundling its entire codebase :contentReference[oaicite:10]{index=10}
+    // Dynamically import Playwright to avoid webpack bundling all of it :contentReference[oaicite:7]{index=7}
     const { chromium } = await import('playwright-chromium');
 
-    // Launch Chromium (no executablePath override) – uses the installed binary :contentReference[oaicite:11]{index=11}
+    // Launch Chromium – uses the binary installed by postinstall :contentReference[oaicite:8]{index=8}
     const browser = await chromium.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     const context = await browser.newContext();
-    const images  = await Promise.all(
-      pages.map(async (_page, i) => {
+
+    const images = await Promise.all(
+      pages.map(async (_pg, i) => {
         const page = await context.newPage();
         const png  = await renderPageToPng(page, i, pages, baseUrl);
         await page.close();

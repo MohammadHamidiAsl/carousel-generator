@@ -1,23 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    // Prevent Next from bundling these large packages (Recorder, bidi, etc.) :contentReference[oaicite:7]{index=7}
+    // Prevent Next.js from bundling Playwright’s entire codebase
     serverComponentsExternalPackages: [
       'playwright-core',
       'playwright-chromium'
     ]
   },
-
-  // For Next 15+ (harmless in 14)
+  // For Next.js 15+ (ignored by 14.x)
   serverExternalPackages: [
     'playwright-core',
     'playwright-chromium'
   ],
 
   webpack: (config) => {
-    // Stub out optional native modules
+    // Stub out optional native modules and avoid loader errors
     config.resolve.alias.canvas   = false;
-    config.resolve.alias.electron = false;  // avoids bundling Electron code :contentReference[oaicite:8]{index=8}
+    config.resolve.alias.electron = false;
     return config;
   }
 };
