@@ -1,92 +1,84 @@
-/* Generates 1080×1080 PNG slides using Playwright’s static Chromium. */
+import { ImageResponse } from 'next/og';
 
-import { NextRequest, NextResponse } from 'next/server';
-export const runtime = 'nodejs';  // full Node.js environment for Playwright
+export const runtime = 'edge';  // Use Edge runtime for minimal cold starts 
 
-// ─── Types ────────────────────────────────────────────────────────────────
-interface PageData {
-  type: 'cover' | 'content' | 'end';
-  title?: string;
-  subtitle?: string;
-  paragraphs?: string[];
-  headline?: string;
-  highlight?: string;
-  buttonText?: string;
-  buttonUrl?: string;
-}
-interface RequestBody { pages: PageData[]; }
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const dataParam = searchParams.get('data');
+  const pages: {
+    type: 'cover' | 'content' | 'end';
+    title?: string;
+    subtitle?: string;
+    paragraphs?: string[];
+    headline?: string;
+    highlight?: string;
+    buttonText?: string;
+    buttonUrl?: string;
+  }[] = dataParam ? JSON.parse(decodeURIComponent(dataParam)) : [];
 
-// ─── Helper: render one slide to PNG ──────────────────────────────────────
-async function renderPageToPng(
-  page: any,
-  idx: number,
-  pages: PageData[],
-  baseUrl: string
-): Promise<string> {
-  await page.setViewportSize({ width: 1080, height: 1080 });
-
-  const url = `${baseUrl}/render?page=${idx}&data=${encodeURIComponent(
-    JSON.stringify(pages)
-  )}`;
-  await page.goto(url, { waitUntil: 'networkidle' });
-
-  try {
-    await page.evaluate(() => (document as any).fonts.ready);
-  } catch {
-    await new Promise((r) => setTimeout(r, 2000));
-  }
-
-  const buf = await page.screenshot({ type: 'png' });
-  return buf.toString('base64');
-}
-
-// ─── POST handler ─────────────────────────────────────────────────────────
-export async function POST(request: NextRequest) {
-  try {
-    const { pages }: RequestBody = await request.json();
-    if (!Array.isArray(pages) || pages.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Pages array is required' },
-        { status: 400 }
-      );
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          height: '100%',
+          backgroundColor: '#fff',
+          padding: '40px',
+          fontFamily: 'Arial, sans-serif',
+        }}
+      >
+        {pages.map((page, idx) => (
+          <div
+            key={idx}
+            style={{
+              marginBottom: '32px',
+              width: '100%',
+              textAlign: 'center',
+            }}
+          >
+            {page.title && (
+              <h1 style={{ fontSize: 48, margin: 0 }}>
+                {page.title}
+              </h1>
+            )}
+            {page.subtitle && (
+              <h2 style={{ fontSize: 32, margin: '8px 0' }}>
+                {page.subtitle}
+              </h2>
+            )}
+            {page.paragraphs?.map((text, i) => (
+              <p key={i} style={{ fontSize: 24, lineHeight: 1.4 }}>
+                {text}
+              </p>
+            ))}
+            {page.buttonText && page.buttonUrl && (
+              <a
+                href={page.buttonUrl}
+                style={{
+                  display: 'inline-block',
+                  marginTop: '16px',
+                  padding: '12px 24px',
+                  backgroundColor: '#0070f3',
+                  color: '#fff',
+                  borderRadius: '4px',
+                  textDecoration: 'none',
+                  fontSize: 20,
+                }}
+              >
+                {page.buttonText}
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+    ),
+    {
+      width: 1080,
+      height: 1080,
     }
-
-    // Build baseUrl from incoming request
-    const host     = request.headers.get('host') ?? 'localhost:3000';
-    const protocol = host.startsWith('localhost') ? 'http' : 'https';
-    const baseUrl  =
-      process.env.NEXT_PUBLIC_BASE_URL ?? `${protocol}://${host}`;
-
-    // Dynamically import Playwright to avoid webpack bundling all of it :contentReference[oaicite:7]{index=7}
-    const { chromium } = await import('playwright-chromium');
-
-    // Launch Chromium – uses the binary installed by postinstall :contentReference[oaicite:8]{index=8}
-    const browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-    const context = await browser.newContext();
-
-    const images = await Promise.all(
-      pages.map(async (_pg, i) => {
-        const page = await context.newPage();
-        const png  = await renderPageToPng(page, i, pages, baseUrl);
-        await page.close();
-        return png;
-      })
-    );
-
-    await browser.close();
-    return NextResponse.json({ success: true, images, count: images.length });
-  } catch (err) {
-    console.error('Generation error:', err);
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to generate images',
-        error: err instanceof Error ? err.message : String(err)
-      },
-      { status: 500 }
-    );
-  }
+  );
 }
