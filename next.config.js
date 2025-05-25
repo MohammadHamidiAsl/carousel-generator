@@ -1,21 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* — Next 14 — */
-  experimental: {
-    serverComponentsExternalPackages: [
-      'puppeteer-core',
-      '@sparticuz/chromium-min'
-    ]
-  },
-
-  /* — Next 15+ forward-compat — */
-  serverExternalPackages: [
-    'puppeteer-core',
-    '@sparticuz/chromium-min'
-  ],
-
+  /* No special external flags needed for Playwright’s static build */
   webpack: (config) => {
-    config.resolve.alias.canvas = false;
+    config.resolve.alias.canvas = false;   // unchanged
     return config;
   }
 };
