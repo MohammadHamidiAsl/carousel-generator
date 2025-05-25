@@ -1,27 +1,20 @@
-/* Generates 1080×1080 PNG slides using puppeteer-core +
- * @sparticuz/chromium (full package with bin/ assets). */
-
 import { NextRequest, NextResponse } from 'next/server';
-export const runtime = 'nodejs';                       // Node.js runtime
+export const runtime = 'nodejs';
 
 import puppeteer from 'puppeteer-core';
 import type { Browser, PuppeteerLaunchOptions } from 'puppeteer-core';
-import chromium from '@sparticuz/chromium';            // ← switched from -min
+import chromium from '@sparticuz/chromium-min';        // ← stub package
 
-// ─── Types ──────────────────────────────────────────────────────────────
+/* ---------- user-defined types ---------- */
 interface PageData {
   type: 'cover' | 'content' | 'end';
-  title?: string;
-  subtitle?: string;
-  paragraphs?: string[];
-  headline?: string;
-  highlight?: string;
-  buttonText?: string;
-  buttonUrl?: string;
+  title?: string; subtitle?: string; paragraphs?: string[];
+  headline?: string; highlight?: string;
+  buttonText?: string; buttonUrl?: string;
 }
 interface RequestBody { pages: PageData[]; }
 
-// ─── Chrome path fallback for local dev ─────────────────────────────────
+/* ---------- local Chrome for dev ---------- */
 const guessChromePath = (): string | undefined => {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
   switch (process.platform) {
@@ -34,53 +27,45 @@ const guessChromePath = (): string | undefined => {
   }
 };
 
-// ─── Helper: render ONE page to PNG ─────────────────────────────────────
+/* ---------- helper: render one slide ---------- */
 async function renderPageToPng(
   browser: Browser,
-  pageIndex: number,
+  idx: number,
   pages: PageData[],
   baseUrl: string
 ): Promise<string> {
   const page = await browser.newPage();
   await page.setViewport({ width: 1080, height: 1080, deviceScaleFactor: 2 });
 
-  const url = `${baseUrl}/render?page=${pageIndex}&data=${encodeURIComponent(
+  const url = `${baseUrl}/render?page=${idx}&data=${encodeURIComponent(
     JSON.stringify(pages)
   )}`;
-
   await page.goto(url, { waitUntil: 'networkidle0' });
 
-  try {
-    await page.evaluate(() => (document as any).fonts.ready);
-  } catch {
-    await new Promise((r) => setTimeout(r, 2000));
-  }
+  try { await page.evaluate(() => (document as any).fonts.ready); }
+  catch { await new Promise(r => setTimeout(r, 2000)); }
 
-  const buffer = await page.screenshot({ type: 'png' });
+  const buf = await page.screenshot({ type: 'png' });
   await page.close();
-  return buffer.toString('base64');
+  return buf.toString('base64');
 }
 
-// ─── POST handler ───────────────────────────────────────────────────────
+/* ---------- route handler ---------- */
 export async function POST(request: NextRequest) {
   try {
     const body: RequestBody = await request.json();
-    if (!Array.isArray(body.pages) || body.pages.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Pages array is required' },
-        { status: 400 }
-      );
+    if (!Array.isArray(body.pages) || !body.pages.length) {
+      return NextResponse.json({ success: false, message: 'Pages array is required' }, { status: 400 });
     }
 
-    const host   = request.headers.get('host') ?? 'localhost:3000';
-    const isLocal = host.startsWith('localhost') || host.startsWith('127.');
-    const protocol = isLocal ? 'http' : 'https';
+    const host = request.headers.get('host') ?? 'localhost:3000';
+    const protocol = host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https';
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? `${protocol}://${host}`;
 
-    // -------- Launch Puppeteer ------------------------------------------
+    /* -------- launch Chromium -------- */
     const executablePath =
       process.env.CHROME_PATH ||
-      (await chromium.executablePath()) ||  // full package provides bin/
+      (await chromium.executablePath()) ||  // downloads a self-contained binary
       guessChromePath();
 
     const launchOpts: PuppeteerLaunchOptions = {
@@ -92,25 +77,19 @@ export async function POST(request: NextRequest) {
 
     const browser: Browser = await puppeteer.launch(launchOpts);
 
-    // -------- Render all pages ------------------------------------------
+    /* -------- make the slides -------- */
     try {
       const images = await Promise.all(
-        body.pages.map((_, i) =>
-          renderPageToPng(browser, i, body.pages, baseUrl)
-        )
+        body.pages.map((_, i) => renderPageToPng(browser, i, body.pages, baseUrl))
       );
       return NextResponse.json({ success: true, images, count: images.length });
     } finally {
       await browser.close();
     }
-  } catch (error) {
-    console.error('Generation error:', error);
+  } catch (err) {
+    console.error('Generation error:', err);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to generate images',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { success: false, message: 'Failed to generate images', error: (err as Error).message },
       { status: 500 }
     );
   }
