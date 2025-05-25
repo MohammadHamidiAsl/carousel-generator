@@ -1,37 +1,27 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* ---- Next 14 (your current version) ---------------------------- */
+  // ── Next 14 (current) ────────────────────────────────────────────────
   experimental: {
-    /**
-     * Keep the *entire* package in node_modules so its assets survive.
-     */
+    /** Keep these packages external so their assets remain in node_modules */
     serverComponentsExternalPackages: [
       'puppeteer-core',
-      '@sparticuz/chromium-min',
-    ],
-
-    /**
-     * Tell the output-file-tracer to copy chromium-min/bin/**
-     * into the server bundle for THIS route handler.
-     * 🔑 Key *must* include the file-extension!
-     */
-    outputFileTracingIncludes: {
-      'app/api/generate/route.ts': [
-        './node_modules/@sparticuz/chromium-min/bin/**',
-      ],
-    },
+      '@sparticuz/chromium'       // ← switched from -min
+    ]
   },
 
-  /* ---- Next 15+ (forward-compat, harmless in 14) ----------------- */
+  // ── Next 15+ forward compatibility (ignored by 14) ───────────────────
   serverExternalPackages: [
     'puppeteer-core',
-    '@sparticuz/chromium-min',
+    '@sparticuz/chromium'
   ],
 
+  // Optional: if you had traced the bin/ folder before, it's no longer needed
+  // because the full package already contains it and Next will keep it.
+
   webpack: (config) => {
-    config.resolve.alias.canvas = false;   // whatever tweak you need
+    config.resolve.alias.canvas = false;   // keep your existing tweak
     return config;
-  },
+  }
 };
 
 module.exports = nextConfig;
