@@ -16,8 +16,12 @@ html {
 body {
   color: white;
   background: #0b0d1a;
-  font-family: 'Vazirmatn', 'Tahoma', 'Arial Unicode MS', sans-serif;
+  font-family: 'Vazirmatn', 'Tahoma', 'Arial Unicode MS', 'DejaVu Sans', 'Liberation Sans', sans-serif;
   direction: rtl;
+  /* Enhanced text rendering for Persian */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 .carousel-page {
@@ -27,6 +31,54 @@ body {
   overflow: hidden;
 }
 
+/* Persian text optimization */
+[lang="fa"],
+.persian-text {
+  font-family: 'Vazirmatn', 'Tahoma', 'Arial Unicode MS', 'DejaVu Sans', 'Liberation Sans', sans-serif;
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: embed;
+
+  /* Persian text rendering optimizations */
+  font-variant-ligatures: common-ligatures contextual;
+  font-feature-settings: "liga" on, "calt" on, "kern" on;
+  font-kerning: auto;
+
+  /* Better Persian character spacing */
+  letter-spacing: 0.02em;
+  word-spacing: 0.1em;
+
+  /* Enhanced text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* English text optimization */
+[lang="en"],
+.english-text {
+  font-family: 'Vazirmatn', 'Tahoma', 'Arial Unicode MS', sans-serif;
+  direction: ltr;
+  text-align: left;
+}
+
+/* Mixed content support */
+.mixed-content {
+  unicode-bidi: embed;
+}
+
+.mixed-content [lang="fa"] {
+  direction: rtl;
+  display: inline-block;
+  text-align: right;
+}
+
+.mixed-content [lang="en"] {
+  direction: ltr;
+  display: inline-block;
+  text-align: left;
+}
+
 @layer utilities {
   .text-shadow-lg {
     text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
@@ -34,5 +86,16 @@ body {
 
   .backdrop-blur-subtle {
     backdrop-filter: blur(1px);
+  }
+
+  /* Persian text utilities */
+  .persian-optimized {
+    font-family: 'Vazirmatn', 'Tahoma', 'Arial Unicode MS', 'DejaVu Sans', sans-serif !important;
+    direction: rtl !important;
+    text-align: right !important;
+    letter-spacing: 0.02em !important;
+    word-spacing: 0.1em !important;
+    text-rendering: optimizeLegibility !important;
+    -webkit-font-smoothing: antialiased !important;
   }
 }

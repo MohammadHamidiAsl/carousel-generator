@@ -1,0 +1,148 @@
+/* Persian/Farsi Text Rendering Support */
+
+/* Define Persian font stack */
+@font-face {
+    font-family: 'Persian';
+    src: local('Tahoma'), local('Arial Unicode MS'), local('DejaVu Sans');
+    unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+/* Global Persian text support */
+* {
+    /* Enable text rendering optimization */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* Persian text container */
+.persian-text,
+[lang="fa"],
+[dir="rtl"] {
+    font-family:
+        'Iranian Sans',
+        'Tahoma',
+        'Persian',
+        'DejaVu Sans',
+        'Arial Unicode MS',
+        'Noto Sans Arabic',
+        'Noto Sans',
+        'Liberation Sans',
+        'Droid Arabic Naskh',
+        'Arabic Typesetting',
+        'Traditional Arabic',
+        'Al Bayan',
+        'Geeza Pro',
+        'Damascus',
+        'Lucida Grande',
+        sans-serif;
+
+    direction: rtl;
+    text-align: right;
+    unicode-bidi: embed;
+
+    /* Text rendering optimization for Persian */
+    font-variant-ligatures: common-ligatures contextual;
+    font-feature-settings: "liga" on, "calt" on, "kern" on;
+    font-kerning: auto;
+
+    /* Improve Persian character spacing */
+    letter-spacing: 0.02em;
+    word-spacing: 0.1em;
+    line-height: 1.6;
+
+    /* Better text rendering */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Specific element support */
+h1.persian-text,
+h1[lang="fa"],
+h1[dir="rtl"] {
+    font-weight: bold;
+    font-size: 2.5rem;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+}
+
+h2.persian-text,
+h2[lang="fa"],
+h2[dir="rtl"] {
+    font-weight: 600;
+    font-size: 2rem;
+    line-height: 1.5;
+    margin-bottom: 0.8rem;
+}
+
+p.persian-text,
+p[lang="fa"],
+p[dir="rtl"] {
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+}
+
+/* Button text for Persian */
+button.persian-text,
+button[lang="fa"],
+.button[dir="rtl"] {
+    font-weight: 600;
+    text-align: center;
+    direction: ltr;
+    /* Buttons usually center-aligned */
+}
+
+/* Mixed content support (Persian + English) */
+.mixed-content {
+    direction: rtl;
+    text-align: right;
+}
+
+.mixed-content .english {
+    direction: ltr;
+    display: inline-block;
+    text-align: left;
+}
+
+.mixed-content .persian {
+    direction: rtl;
+    display: inline-block;
+    text-align: right;
+}
+
+/* Ensure proper rendering in different contexts */
+.carousel-slide {
+    /* Support both LTR and RTL content */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+.carousel-slide.rtl {
+    direction: rtl;
+    text-align: right;
+}
+
+.carousel-slide.ltr {
+    direction: ltr;
+    text-align: left;
+}
+
+/* Debug helper - shows text direction visually */
+.debug-rtl {
+    border-left: 3px solid orange !important;
+    padding-left: 0.5rem !important;
+    border-right: none !important;
+    padding-right: 0 !important;
+}
+
+/* Force Persian rendering for problematic elements */
+.force-persian {
+    font-family: 'Tahoma', 'DejaVu Sans', 'Liberation Sans', sans-serif !important;
+    direction: rtl !important;
+    text-align: right !important;
+    unicode-bidi: embed !important;
+    -webkit-font-smoothing: antialiased !important;
+    text-rendering: optimizeLegibility !important;
+}

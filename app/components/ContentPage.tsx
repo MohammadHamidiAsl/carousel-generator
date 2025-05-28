@@ -4,6 +4,12 @@ interface ContentPageProps {
   paragraphs: string[];
 }
 
+// Helper function to detect Persian text
+function isPersianText(text: string): boolean {
+  const persianRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  return persianRegex.test(text);
+}
+
 export default function ContentPage({ paragraphs }: ContentPageProps) {
   return (
     <div className="carousel-page relative min-h-screen overflow-hidden" style={{ backgroundColor: '#1a1b2e' }}>
@@ -17,22 +23,34 @@ export default function ContentPage({ paragraphs }: ContentPageProps) {
 
       {/* Content container - centered vertically and horizontally */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="max-w-4xl px-8" dir="rtl">
+        <div className="max-w-4xl px-8">
           {/* Paragraphs */}
           {paragraphs.length > 0 && (
             <div className="space-y-12 text-center">
-              {paragraphs.map((paragraph, index) => (
-                <p
-                  key={index}
-                  className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-400 leading-relaxed"
-                  style={{ 
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
-                    lineHeight: '1.8'
-                  }}
-                >
-                  {paragraph}
-                </p>
-              ))}
+              {paragraphs.map((paragraph, index) => {
+                const isRTL = isPersianText(paragraph);
+                return (
+                  <p
+                    key={index}
+                    className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-400 leading-relaxed"
+                    dir={isRTL ? "rtl" : "ltr"}
+                    lang={isRTL ? "fa" : "en"}
+                    style={{
+                      // Use global Persian fonts - DON'T override!
+                      fontFamily: "'Vazirmatn', 'Tahoma', 'Arial Unicode MS', sans-serif",
+                      lineHeight: '1.8',
+                      textAlign: isRTL ? 'right' : 'left',
+                      // Additional Persian text optimizations
+                      ...(isRTL && {
+                        letterSpacing: '0.02em',
+                        wordSpacing: '0.1em'
+                      })
+                    }}
+                  >
+                    {paragraph}
+                  </p>
+                );
+              })}
             </div>
           )}
         </div>

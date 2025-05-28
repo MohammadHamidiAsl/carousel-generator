@@ -7,6 +7,12 @@ interface EndPageProps {
   buttonUrl?: string;
 }
 
+// Helper function to detect Persian text
+function isPersianText(text: string): boolean {
+  const persianRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  return persianRegex.test(text);
+}
+
 export default function EndPage({
   headline,
   highlight = '',
@@ -14,6 +20,8 @@ export default function EndPage({
   buttonUrl = '#'
 }: EndPageProps) {
   const parts = highlight ? headline.split(highlight) : [headline];
+  const headlineIsPersian = isPersianText(headline);
+  const buttonTextIsPersian = isPersianText(buttonText);
 
   return (
     <div className="carousel-page relative min-h-screen overflow-hidden" style={{ backgroundColor: '#1a1b2e' }}>
@@ -27,13 +35,20 @@ export default function EndPage({
 
       {/* Main content - centered */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="max-w-5xl px-8 text-center" dir="rtl">
+        <div className="max-w-5xl px-8 text-center" dir={headlineIsPersian ? "rtl" : "ltr"}>
           {/* Headline - centered with highlight */}
-          <h2 
+          <h2
             className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-white mb-20"
-            style={{ 
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              lineHeight: '1.2'
+            lang={headlineIsPersian ? "fa" : "en"}
+            style={{
+              // Use global Persian fonts - DON'T override!
+              fontFamily: "'Vazirmatn', 'Tahoma', 'Arial Unicode MS', sans-serif",
+              lineHeight: '1.2',
+              // Additional Persian text optimizations
+              ...(headlineIsPersian && {
+                letterSpacing: '0.02em',
+                wordSpacing: '0.1em'
+              })
             }}
           >
             {parts[0]}
@@ -44,24 +59,34 @@ export default function EndPage({
           </h2>
         </div>
 
-        {/* CTA Button - centered below text - made even bigger */}
+        {/* CTA Button - centered below text */}
         <a
           href={buttonUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="flex overflow-hidden rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300"
-          style={{ direction: 'rtl' }}
+          style={{ direction: buttonTextIsPersian ? 'rtl' : 'ltr' }}
         >
-          <span 
+          <span
             className="px-24 py-12 text-4xl font-bold text-white transition-all duration-300 hover:bg-purple-600"
-            style={{ backgroundColor: 'rgba(139, 92, 246, 1)' }}
+            style={{
+              backgroundColor: 'rgba(139, 92, 246, 1)',
+              // Use Persian fonts for button text
+              fontFamily: "'Vazirmatn', 'Tahoma', 'Arial Unicode MS', sans-serif"
+            }}
+            lang="fa"
           >
             دموی رایگان
           </span>
           <span className="w-px bg-white/26" />
-          <span 
+          <span
             className="px-24 py-12 text-4xl font-bold text-white transition-all duration-300 hover:bg-purple-700"
-            style={{ backgroundColor: 'rgba(139, 92, 246, 1)' }}
+            style={{
+              backgroundColor: 'rgba(139, 92, 246, 1)',
+              // Use Persian fonts for URL text (mixed content)
+              fontFamily: "'Vazirmatn', 'Tahoma', 'Arial Unicode MS', sans-serif"
+            }}
+            lang="en"
           >
             n98n.ir
           </span>

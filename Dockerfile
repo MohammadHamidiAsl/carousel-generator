@@ -1,24 +1,31 @@
-# ─── Builder stage ───────────────────────────────────────────────────────
-FROM node:18-slim AS builder
-WORKDIR /app
+# ─── Simple Multi-Architecture Dockerfile using System Chromium ─────────
+FROM node:18-slim
 
-# Install app dependencies
-COPY package*.json ./
-RUN npm install
-
-# Copy source & build
-COPY . .
-RUN npm run build
-
-# ─── Runner stage ────────────────────────────────────────────────────────
-FROM node:18-slim AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-
-# Install Chromium dependencies for Puppeteer
-RUN apt-get update && apt-get install -y \
+# Install system dependencies including Chromium and available Persian fonts
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    curl \
+    wget \
+    chromium \
+    # Font configuration tools
+    fontconfig \
+    # Available fonts for Persian/Farsi text rendering
     fonts-liberation \
+    fonts-noto-color-emoji \
+    fonts-noto-cjk \
+    fonts-noto \
+    fonts-noto-core \
+    fonts-noto-ui-core \
+    # Available Persian/Arabic fonts in Debian
+    fonts-farsiweb \
+    fonts-droid-fallback \
+    fonts-kacst \
+    fonts-kacst-one \
+    # Additional Unicode support
+    fonts-dejavu \
+    fonts-dejavu-core \
+    fonts-dejavu-extra \
+    # RTL language support dependencies
     libxss1 \
     libnss3 \
     libatk1.0-0 \
@@ -30,19 +37,48 @@ RUN apt-get update && apt-get install -y \
     libxcomposite1 \
     libxdamage1 \
     libxrandr2 \
+    libxfixes3 \
+    libdrm2 \
+    libxkbcommon0 \
+    libatspi2.0-0 \
     xdg-utils \
-  --no-install-recommends && \
-  rm -rf /var/lib/apt/lists/*
+    && fc-cache -fv \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy over only what's needed at runtime
-COPY --from=builder /app/.next       ./.next
-COPY --from=builder /app/public      ./public
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/next.config.js ./
-# (if you use next.config.ts, uncomment the next line)
-# COPY --from=builder /app/next.config.ts ./
+WORKDIR /app
 
-# Expose and run
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Clean up dev dependencies
+RUN npm prune --production
+
+# Create non-root user
+RUN groupadd -r nodegroup && useradd -r -g nodegroup -m nodeuser && \
+    chown -R nodeuser:nodegroup /app
+
+# Copy startup script
+COPY start-app.sh /usr/local/bin/start-app.sh
+RUN chmod +x /usr/local/bin/start-app.sh
+
+# Switch to non-root user
+USER nodeuser
+
+# Environment variables
+ENV NODE_ENV=production \
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
 EXPOSE 3000
-CMD ["npm", "start"]
+
+HEALTHCHECK --interval=30s --timeout=15s --start-period=45s --retries=3 \
+  CMD curl -f http://localhost:3000/api/generate || exit 1
+
+CMD ["/usr/local/bin/start-app.sh"]
