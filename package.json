@@ -1,22 +1,47 @@
 {
   "name": "carousel-generator",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "health-check": "curl -f http://localhost:3000/api/generate || exit 1",
+    "install-chromium": "node -e \"const puppeteer = require('puppeteer'); console.log('Chromium will be downloaded automatically')\""
   },
   "dependencies": {
-    "autoprefixer": "10.4.0",
-    "next": "14.1.0",
-    "postcss": "8.4.0",
-    "react": "18.3.0",
-    "react-dom": "18.3.0",
-    "tailwindcss": "3.4.0"
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "next": "^14.1.0",
+    "puppeteer": "^22.15.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.3.0"
   },
   "devDependencies": {
-    "@types/node": "^20.17.50",
-    "@types/react": "^18.3.22",
-    "typescript": "^5.8.3"
-  }
+    "@types/jest": "^29.5.0",
+    "@types/puppeteer": "^7.0.4",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.1.0",
+    "jest": "^29.7.0",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.4.0",
+    "ts-jest": "^29.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "engineStrict": true
 }

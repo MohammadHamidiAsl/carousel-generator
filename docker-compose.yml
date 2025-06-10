@@ -1,0 +1,56 @@
+# No version needed - latest Docker Compose format
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      # Application settings
+      - NODE_ENV=production
+      - PORT=3000
+      
+      # Let the container auto-detect the browser path
+      # These will be set by the startup script based on what's available
+      
+      # Performance tuning
+      - NODE_OPTIONS=--max-old-space-size=1024
+      
+      # Optional: Base URL override
+      # - NEXT_PUBLIC_BASE_URL=https://your-domain.com
+      
+    restart: unless-stopped
+    
+    # Resource limits optimized for development
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.2'
+    
+    # Health check with longer timeout for browser startup
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/generate"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 90s
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  default:
+    driver: bridge
